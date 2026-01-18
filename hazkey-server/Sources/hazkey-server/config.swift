@@ -38,8 +38,9 @@ class HazkeyServerConfig {
     let dictionaryPath: URL
     let zenzaiAvailable: Bool
     let zenzaiModelPath: URL?
+    let ggmlBackendDevices: [GGMLBackendDevice]
 
-    init(llamaAvailable: Bool) {
+    init(ggmlBackendDevices: [GGMLBackendDevice]) {
         do {
             profiles = try Self.loadConfig()
         } catch {
@@ -67,7 +68,7 @@ class HazkeyServerConfig {
 
         // set zenzai model path
         zenzaiModelPath = {
-            if !llamaAvailable {
+            if ggmlBackendDevices.count == 0 {
                 return nil
             }
 
@@ -93,7 +94,8 @@ class HazkeyServerConfig {
             }
         }()
 
-        self.zenzaiAvailable = llamaAvailable && zenzaiModelPath != nil
+        self.ggmlBackendDevices = ggmlBackendDevices
+        self.zenzaiAvailable = (ggmlBackendDevices.count > 0) && (zenzaiModelPath != nil)
     }
 
     func getCurrentConfig() -> Hazkey_ResponseEnvelope {
@@ -181,12 +183,24 @@ class HazkeyServerConfig {
             }
         }
 
+        var zenzaiDevices: [Hazkey_Config_BackendDevice] = []
+        for devices in ggmlBackendDevices {
+            zenzaiDevices.append(
+                Hazkey_Config_BackendDevice.with {
+                    $0.name = devices.name
+                    $0.desc = devices.description
+                }
+            )
+        }
+
         let currentConfig = Hazkey_Config_CurrentConfig.with {
             $0.fileHashes = []
-            $0.isZenzaiAvailable = zenzaiAvailable
+            $0.zenzaiModelAvailable = zenzaiModelPath != nil
+            $0.zenzaiModelUpdated = true
             $0.xdgConfigHomePath = Self.getConfigDirectory().absoluteString
             $0.availableKeymaps = keymaps
             $0.availableTables = inputTables
+            $0.availableZenzaiBackendDevices = zenzaiDevices
             $0.profiles = profiles
         }
         return Hazkey_ResponseEnvelope.with {
@@ -269,6 +283,7 @@ class HazkeyServerConfig {
             }
         ]
         newConf.submodeEntryPointChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        newConf.zenzaiBackendDeviceName = "CPU"
         newConf.zenzaiEnable = true
         newConf.zenzaiInferLimit = 10
         newConf.zenzaiContextualMode = true
@@ -377,7 +392,7 @@ class HazkeyServerConfig {
                         leftSideContext: currentProfile.zenzaiContextualMode
                             ? leftContext : nil
                     )),
-                deviceConfig: createDeviceConfig()
+                deviceConfig: createDeviceConfig(deviceName: currentProfile.zenzaiBackendDeviceName)
             )
         } else {
             return ConvertRequestOptions.ZenzaiMode.off

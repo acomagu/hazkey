@@ -27,6 +27,11 @@ message InputTable {
     string filename = 3;
 }
 
+message BackendDevice {
+    string name = 1;
+    string desc = 2;
+}
+
 message Profile {
     enum AutoConvertMode {
         AUTO_CONVERT_MODE_UNSPECIFIED = 0;
@@ -111,6 +116,7 @@ message Profile {
     optional bool zenzai_contextual_mode = 103;
     optional bool use_zenzai_custom_weight = 105;
     optional string zenzai_weight_path = 106;
+    optional string zenzai_backend_device_name = 107;
 
     optional string zenzai_profile = 120;
     optional string zenzai_topic = 121;
@@ -140,6 +146,8 @@ message CurrentConfig {
     repeated Profile profiles = 2;
     repeated Keymap available_keymaps = 3;
     repeated InputTable available_tables = 4;
-    bool is_zenzai_available = 5;
+    repeated BackendDevice available_zenzai_backend_devices = 7;
+    bool zenzai_model_available = 8;
+    bool zenzai_model_updated = 9;
     string xdg_config_home_path = 6;
 }

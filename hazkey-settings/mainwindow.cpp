@@ -169,15 +169,60 @@ bool MainWindow::loadCurrentConfig() {
         return false;
     }
 
-    if (!currentConfig_.is_zenzai_available()) {
+    if (currentConfig_.available_zenzai_backend_devices_size() <= 0) {
         ui_->enableZenzai->setEnabled(false);
         ui_->zenzaiContextualConversion->setEnabled(false);
         ui_->zenzaiInferenceLimit->setEnabled(false);
         ui_->zenzaiUserPlofile->setEnabled(false);
+        ui_->zenzaiBackendDevice->setEnabled(false);
         QLabel* warningLabel =
             new QLabel(tr("<b>Warning:</b> Zenzai support not installed."));
         warningLabel->setStyleSheet("background-color: yellow; padding: 5px;");
         ui_->aiTabScrollContentsLayout->insertWidget(1, warningLabel);
+    } else if (!currentConfig_.zenzai_model_available()) {
+        ui_->enableZenzai->setEnabled(false);
+        ui_->zenzaiContextualConversion->setEnabled(false);
+        ui_->zenzaiInferenceLimit->setEnabled(false);
+        ui_->zenzaiUserPlofile->setEnabled(false);
+        ui_->zenzaiBackendDevice->setEnabled(false);
+        QLabel* warningLabel =
+            new QLabel(tr("<b>Warning:</b> Zenzai model not found."));
+        warningLabel->setStyleSheet("background-color: yellow; padding: 5px;");
+        ui_->aiTabScrollContentsLayout->insertWidget(1, warningLabel);
+    } else if (!currentConfig_.zenzai_model_updated()) {
+        ui_->enableZenzai->setEnabled(false);
+        ui_->zenzaiContextualConversion->setEnabled(false);
+        ui_->zenzaiInferenceLimit->setEnabled(false);
+        ui_->zenzaiUserPlofile->setEnabled(false);
+        ui_->zenzaiBackendDevice->setEnabled(false);
+        QLabel* warningLabel =
+            new QLabel(tr("<b>Warning:</b> Zenzai model not found."));
+        warningLabel->setStyleSheet("background-color: yellow; padding: 5px;");
+        ui_->aiTabScrollContentsLayout->insertWidget(1, warningLabel);
+    }
+
+    // Load zenzai backend devices
+    ui_->zenzaiBackendDevice->clear();
+    for (int i = 0; i < currentConfig_.available_zenzai_backend_devices_size();
+         ++i) {
+        const auto& device = currentConfig_.available_zenzai_backend_devices(i);
+        QString deviceName = QString::fromStdString(device.name());
+        QString deviceDesc = QString::fromStdString(device.desc());
+        QString displayText = deviceName;
+        if (!deviceDesc.isEmpty()) {
+            displayText += " : " + deviceDesc;
+        }
+        ui_->zenzaiBackendDevice->addItem(displayText, deviceName);
+    }
+
+    // Set current device selection
+    QString currentDevice =
+        QString::fromStdString(currentProfile_->zenzai_backend_device_name());
+    if (!currentDevice.isEmpty()) {
+        int index = ui_->zenzaiBackendDevice->findData(currentDevice);
+        if (index >= 0) {
+            ui_->zenzaiBackendDevice->setCurrentIndex(index);
+        }
     }
 
     SET_COMBO_FROM_CONFIG(ConfigDefs::AutoConvertMode, ui_->autoConvertion,
@@ -303,6 +348,11 @@ bool MainWindow::saveCurrentConfig() {
         GET_LINEEDIT_STRING(ui_->submodeEntryPointChars));
     currentProfile_->set_zenzai_profile(
         GET_LINEEDIT_STRING(ui_->zenzaiUserPlofile));
+
+    // Save zenzai backend device
+    QString selectedDevice = ui_->zenzaiBackendDevice->currentData().toString();
+    currentProfile_->set_zenzai_backend_device_name(
+        selectedDevice.toStdString());
 
     // Save input table configuration
     saveInputTables();

@@ -102,6 +102,20 @@ struct Hazkey_Config_InputTable: Sendable {
   init() {}
 }
 
+struct Hazkey_Config_BackendDevice: Sendable {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var name: String = String()
+
+  var desc: String = String()
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 struct Hazkey_Config_Profile: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -351,6 +365,15 @@ struct Hazkey_Config_Profile: @unchecked Sendable {
   var hasZenzaiWeightPath: Bool {return _storage._zenzaiWeightPath != nil}
   /// Clears the value of `zenzaiWeightPath`. Subsequent reads from it will return its default value.
   mutating func clearZenzaiWeightPath() {_uniqueStorage()._zenzaiWeightPath = nil}
+
+  var zenzaiBackendDeviceName: String {
+    get {return _storage._zenzaiBackendDeviceName ?? String()}
+    set {_uniqueStorage()._zenzaiBackendDeviceName = newValue}
+  }
+  /// Returns true if `zenzaiBackendDeviceName` has been explicitly set.
+  var hasZenzaiBackendDeviceName: Bool {return _storage._zenzaiBackendDeviceName != nil}
+  /// Clears the value of `zenzaiBackendDeviceName`. Subsequent reads from it will return its default value.
+  mutating func clearZenzaiBackendDeviceName() {_uniqueStorage()._zenzaiBackendDeviceName = nil}
 
   var zenzaiProfile: String {
     get {return _storage._zenzaiProfile ?? String()}
@@ -763,7 +786,11 @@ struct Hazkey_Config_CurrentConfig: Sendable {
 
   var availableTables: [Hazkey_Config_InputTable] = []
 
-  var isZenzaiAvailable: Bool = false
+  var availableZenzaiBackendDevices: [Hazkey_Config_BackendDevice] = []
+
+  var zenzaiModelAvailable: Bool = false
+
+  var zenzaiModelUpdated: Bool = false
 
   var xdgConfigHomePath: String = String()
 
@@ -915,6 +942,44 @@ extension Hazkey_Config_InputTable: SwiftProtobuf.Message, SwiftProtobuf._Messag
   }
 }
 
+extension Hazkey_Config_BackendDevice: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".BackendDevice"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "name"),
+    2: .same(proto: "desc"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 2: try { try decoder.decodeSingularStringField(value: &self.desc) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    if !self.desc.isEmpty {
+      try visitor.visitSingularStringField(value: self.desc, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: Hazkey_Config_BackendDevice, rhs: Hazkey_Config_BackendDevice) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.desc != rhs.desc {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".Profile"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
@@ -947,6 +1012,7 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     103: .standard(proto: "zenzai_contextual_mode"),
     105: .standard(proto: "use_zenzai_custom_weight"),
     106: .standard(proto: "zenzai_weight_path"),
+    107: .standard(proto: "zenzai_backend_device_name"),
     120: .standard(proto: "zenzai_profile"),
     121: .standard(proto: "zenzai_topic"),
     122: .standard(proto: "zenzai_style"),
@@ -983,6 +1049,7 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
     var _zenzaiContextualMode: Bool? = nil
     var _useZenzaiCustomWeight: Bool? = nil
     var _zenzaiWeightPath: String? = nil
+    var _zenzaiBackendDeviceName: String? = nil
     var _zenzaiProfile: String? = nil
     var _zenzaiTopic: String? = nil
     var _zenzaiStyle: String? = nil
@@ -1026,6 +1093,7 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       _zenzaiContextualMode = source._zenzaiContextualMode
       _useZenzaiCustomWeight = source._useZenzaiCustomWeight
       _zenzaiWeightPath = source._zenzaiWeightPath
+      _zenzaiBackendDeviceName = source._zenzaiBackendDeviceName
       _zenzaiProfile = source._zenzaiProfile
       _zenzaiTopic = source._zenzaiTopic
       _zenzaiStyle = source._zenzaiStyle
@@ -1077,6 +1145,7 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         case 103: try { try decoder.decodeSingularBoolField(value: &_storage._zenzaiContextualMode) }()
         case 105: try { try decoder.decodeSingularBoolField(value: &_storage._useZenzaiCustomWeight) }()
         case 106: try { try decoder.decodeSingularStringField(value: &_storage._zenzaiWeightPath) }()
+        case 107: try { try decoder.decodeSingularStringField(value: &_storage._zenzaiBackendDeviceName) }()
         case 120: try { try decoder.decodeSingularStringField(value: &_storage._zenzaiProfile) }()
         case 121: try { try decoder.decodeSingularStringField(value: &_storage._zenzaiTopic) }()
         case 122: try { try decoder.decodeSingularStringField(value: &_storage._zenzaiStyle) }()
@@ -1180,6 +1249,9 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
       try { if let v = _storage._zenzaiWeightPath {
         try visitor.visitSingularStringField(value: v, fieldNumber: 106)
       } }()
+      try { if let v = _storage._zenzaiBackendDeviceName {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 107)
+      } }()
       try { if let v = _storage._zenzaiProfile {
         try visitor.visitSingularStringField(value: v, fieldNumber: 120)
       } }()
@@ -1230,6 +1302,7 @@ extension Hazkey_Config_Profile: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
         if _storage._zenzaiContextualMode != rhs_storage._zenzaiContextualMode {return false}
         if _storage._useZenzaiCustomWeight != rhs_storage._useZenzaiCustomWeight {return false}
         if _storage._zenzaiWeightPath != rhs_storage._zenzaiWeightPath {return false}
+        if _storage._zenzaiBackendDeviceName != rhs_storage._zenzaiBackendDeviceName {return false}
         if _storage._zenzaiProfile != rhs_storage._zenzaiProfile {return false}
         if _storage._zenzaiTopic != rhs_storage._zenzaiTopic {return false}
         if _storage._zenzaiStyle != rhs_storage._zenzaiStyle {return false}
@@ -1565,7 +1638,9 @@ extension Hazkey_Config_CurrentConfig: SwiftProtobuf.Message, SwiftProtobuf._Mes
     2: .same(proto: "profiles"),
     3: .standard(proto: "available_keymaps"),
     4: .standard(proto: "available_tables"),
-    5: .standard(proto: "is_zenzai_available"),
+    7: .standard(proto: "available_zenzai_backend_devices"),
+    8: .standard(proto: "zenzai_model_available"),
+    9: .standard(proto: "zenzai_model_updated"),
     6: .standard(proto: "xdg_config_home_path"),
   ]
 
@@ -1579,8 +1654,10 @@ extension Hazkey_Config_CurrentConfig: SwiftProtobuf.Message, SwiftProtobuf._Mes
       case 2: try { try decoder.decodeRepeatedMessageField(value: &self.profiles) }()
       case 3: try { try decoder.decodeRepeatedMessageField(value: &self.availableKeymaps) }()
       case 4: try { try decoder.decodeRepeatedMessageField(value: &self.availableTables) }()
-      case 5: try { try decoder.decodeSingularBoolField(value: &self.isZenzaiAvailable) }()
       case 6: try { try decoder.decodeSingularStringField(value: &self.xdgConfigHomePath) }()
+      case 7: try { try decoder.decodeRepeatedMessageField(value: &self.availableZenzaiBackendDevices) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.zenzaiModelAvailable) }()
+      case 9: try { try decoder.decodeSingularBoolField(value: &self.zenzaiModelUpdated) }()
       default: break
       }
     }
@@ -1599,11 +1676,17 @@ extension Hazkey_Config_CurrentConfig: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if !self.availableTables.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.availableTables, fieldNumber: 4)
     }
-    if self.isZenzaiAvailable != false {
-      try visitor.visitSingularBoolField(value: self.isZenzaiAvailable, fieldNumber: 5)
-    }
     if !self.xdgConfigHomePath.isEmpty {
       try visitor.visitSingularStringField(value: self.xdgConfigHomePath, fieldNumber: 6)
+    }
+    if !self.availableZenzaiBackendDevices.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.availableZenzaiBackendDevices, fieldNumber: 7)
+    }
+    if self.zenzaiModelAvailable != false {
+      try visitor.visitSingularBoolField(value: self.zenzaiModelAvailable, fieldNumber: 8)
+    }
+    if self.zenzaiModelUpdated != false {
+      try visitor.visitSingularBoolField(value: self.zenzaiModelUpdated, fieldNumber: 9)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1613,7 +1696,9 @@ extension Hazkey_Config_CurrentConfig: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if lhs.profiles != rhs.profiles {return false}
     if lhs.availableKeymaps != rhs.availableKeymaps {return false}
     if lhs.availableTables != rhs.availableTables {return false}
-    if lhs.isZenzaiAvailable != rhs.isZenzaiAvailable {return false}
+    if lhs.availableZenzaiBackendDevices != rhs.availableZenzaiBackendDevices {return false}
+    if lhs.zenzaiModelAvailable != rhs.zenzaiModelAvailable {return false}
+    if lhs.zenzaiModelUpdated != rhs.zenzaiModelUpdated {return false}
     if lhs.xdgConfigHomePath != rhs.xdgConfigHomePath {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true

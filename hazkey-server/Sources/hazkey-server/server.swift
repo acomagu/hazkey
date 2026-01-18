@@ -33,7 +33,7 @@ class HazkeyServer: SocketManagerDelegate {
         self.llamaAvailable = ggmlBackendDevices.count > 0
 
         // Initialize server state
-        self.state = HazkeyServerState(llamaAvailable: llamaAvailable)
+        self.state = HazkeyServerState(ggmlBackendDevices: ggmlBackendDevices)
 
         // Initialize managers
         self.processManager = ProcessManager()
