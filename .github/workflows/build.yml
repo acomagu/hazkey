@@ -113,6 +113,7 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/hazkey-settings/build
           cd ${{ github.workspace }}/hazkey-settings/build
+          sed -i "s/Qt::Orientation::/Qt::/g" ../mainwindow.ui
           cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/usr \
