@@ -377,6 +377,10 @@ class HazkeyServerConfig {
     func genZenzaiMode(leftContext: String)
         -> ConvertRequestOptions.ZenzaiMode
     {
+        let deviceName =
+            currentProfile.zenzaiBackendDeviceName.isEmpty
+            ? "CPU" : currentProfile.zenzaiBackendDeviceName
+
         if zenzaiAvailable, let zenzaiModelPath = zenzaiModelPath, currentProfile.zenzaiEnable {
             return ConvertRequestOptions.ZenzaiMode.on(
                 weight: zenzaiModelPath,
@@ -392,7 +396,7 @@ class HazkeyServerConfig {
                         leftSideContext: currentProfile.zenzaiContextualMode
                             ? leftContext : nil
                     )),
-                deviceConfig: createDeviceConfig(deviceName: currentProfile.zenzaiBackendDeviceName)
+                deviceConfig: createDeviceConfig(deviceName: deviceName)
             )
         } else {
             return ConvertRequestOptions.ZenzaiMode.off
