@@ -12,15 +12,13 @@ let package = Package(
             targets: ["hazkey-server"])
     ],
     traits: [
-        .trait(
-            name: "Zenzai",
-            enabledTraits: ["Zenzai"])
+        "ZenzaiSupport"
     ],
     dependencies: [
         .package(
             url: "https://github.com/7ka-hiira/AzooKeyKanaKanjiConverter",
             branch: "49ddc9e",
-            traits: [.trait(name: "Zenzai", condition: .when(traits: ["Zenzai"]))]),
+            traits: [.trait(name: "Zenzai", condition: .when(traits: ["ZenzaiSupport"]))]),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.27.0"),
     ],
     targets: [
