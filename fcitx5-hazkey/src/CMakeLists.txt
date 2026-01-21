@@ -4,7 +4,7 @@ set(PROTO_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/../../protocol/config.proto
 )
 
-add_library(fcitx5-hazkey SHARED hazkey_state.cpp hazkey_engine.cpp hazkey_candidate.cpp hazkey_preedit.cpp hazkey_server_connector.cpp)
+add_library(fcitx5-hazkey SHARED hazkey_state.cpp hazkey_engine.cpp hazkey_candidate.cpp hazkey_preedit.cpp hazkey_server_connector.cpp thumb_shift.cpp)
 
 if(Protobuf_VERSION VERSION_GREATER_EQUAL "3.15")
     # 3.15 ~：stable proto3 optional support
@@ -54,6 +54,16 @@ endif()
 
 target_include_directories(fcitx5-hazkey PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${Protobuf_INCLUDE_DIRS})
 target_link_libraries(fcitx5-hazkey PRIVATE Fcitx5::Core Fcitx5::Config ${Protobuf_LITE_LIBRARIES})
+
+if(BUILD_TESTING)
+    add_executable(
+        thumb_shift_test
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tests/thumb_shift_test.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/thumb_shift.cpp
+    )
+    target_include_directories(thumb_shift_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME thumb_shift_test COMMAND thumb_shift_test)
+endif()
 
 
 set_target_properties(fcitx5-hazkey PROPERTIES PREFIX "")
