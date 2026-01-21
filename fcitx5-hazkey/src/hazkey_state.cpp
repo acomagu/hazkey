@@ -5,6 +5,7 @@
 #include <fcitx/candidatelist.h>
 
 #include <algorithm>
+#include <chrono>
 #include <optional>
 #include <string>
 #include <vector>
@@ -37,6 +38,10 @@ void HazkeyState::commitPreedit() { preedit_.commitPreedit(); }
 
 void HazkeyState::keyEvent(KeyEvent& event) {
     FCITX_DEBUG() << "HazkeyState keyEvent";
+
+    if (handleThumbShiftEvent(event)) {
+        return;
+    }
 
     std::string composingText = engine_->server().getComposingText(
         hazkey::commands::GetComposingString_CharType_HIRAGANA,
@@ -218,6 +223,159 @@ bool HazkeyState::isAltDigitKeyEvent(const KeyEvent& event) {
         return true;
     }
     return false;
+}
+
+bool HazkeyState::handleThumbShiftEvent(KeyEvent& event) {
+    if (!engine_->config().enableThumbShift.value()) {
+        return false;
+    }
+
+    auto key = event.key();
+    auto keysym = key.sym();
+    auto now = std::chrono::steady_clock::now();
+
+    if (isThumbShiftKey(keysym)) {
+        if (event.isRelease()) {
+            if (keysym ==
+                static_cast<KeySym>(engine_->config().thumbShiftLeftKeySym
+                                        .value())) {
+                thumbShift_.leftDown = false;
+            } else if (keysym == static_cast<KeySym>(
+                                  engine_->config().thumbShiftRightKeySym
+                                      .value())) {
+                thumbShift_.rightDown = false;
+            }
+
+            if (!thumbShift_.leftDown && !thumbShift_.rightDown) {
+                if (!thumbShift_.used && !thumbShift_.timedOut) {
+                    handleThumbShiftTapAction(keysym);
+                }
+                resetThumbShift();
+            }
+        } else {
+            if (!thumbShift_.leftDown && !thumbShift_.rightDown) {
+                thumbShift_.used = false;
+                thumbShift_.timedOut = false;
+            }
+            if (keysym ==
+                static_cast<KeySym>(engine_->config().thumbShiftLeftKeySym
+                                        .value())) {
+                thumbShift_.leftDown = true;
+            } else if (keysym == static_cast<KeySym>(
+                                  engine_->config().thumbShiftRightKeySym
+                                      .value())) {
+                thumbShift_.rightDown = true;
+            }
+            thumbShift_.lastPressTime = now;
+        }
+
+        event.filterAndAccept();
+        return true;
+    }
+
+    if (event.isRelease()) {
+        return false;
+    }
+
+    if (!canHandleThumbShiftKeyEvent(event)) {
+        return false;
+    }
+
+    auto keyText = Key::keySymToUTF8(keysym);
+    if (keyText.size() != 1) {
+        return false;
+    }
+
+    auto state = currentThumbShiftState();
+    if (state != ThumbShiftState::None) {
+        auto timeoutMs = engine_->config().thumbShiftTimeoutMs.value();
+        if (thumbShift_.lastPressTime.has_value()) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - thumbShift_.lastPressTime.value());
+            if (elapsed.count() > timeoutMs) {
+                thumbShift_.timedOut = true;
+                state = ThumbShiftState::None;
+            }
+        }
+    }
+
+    updateSurroundingText();
+    engine_->server().inputChar(thumbShiftToken(state, keyText));
+    showPreeditCandidateList();
+    setHiraganaAUX();
+
+    if (state != ThumbShiftState::None) {
+        thumbShift_.used = true;
+    }
+
+    event.filterAndAccept();
+    return true;
+}
+
+HazkeyState::ThumbShiftState HazkeyState::currentThumbShiftState() const {
+    if (thumbShift_.leftDown && thumbShift_.rightDown) {
+        return ThumbShiftState::Both;
+    }
+    if (thumbShift_.leftDown) {
+        return ThumbShiftState::Left;
+    }
+    if (thumbShift_.rightDown) {
+        return ThumbShiftState::Right;
+    }
+    return ThumbShiftState::None;
+}
+
+bool HazkeyState::isThumbShiftKey(KeySym sym) const {
+    return sym ==
+               static_cast<KeySym>(
+                   engine_->config().thumbShiftLeftKeySym.value()) ||
+           sym ==
+               static_cast<KeySym>(
+                   engine_->config().thumbShiftRightKeySym.value());
+}
+
+bool HazkeyState::canHandleThumbShiftKeyEvent(const KeyEvent& event) const {
+    if (!isInputableEvent(event)) {
+        return false;
+    }
+    auto states = event.key().states();
+    return states == KeyState::NoState || states == KeyState::Shift;
+}
+
+void HazkeyState::handleThumbShiftTapAction(KeySym sym) {
+    auto action = static_cast<ThumbTapAction>(
+        engine_->config().thumbShiftTapAction.value());
+    if (action == ThumbTapAction::None) {
+        return;
+    }
+
+    if (action == ThumbTapAction::PassThrough) {
+        FCITX_INFO() << "Thumb shift tap passthrough is not implemented for "
+                     << sym;
+        return;
+    }
+
+    if (action == ThumbTapAction::Space) {
+        auto composingText = engine_->server().getComposingText(
+            hazkey::commands::GetComposingString_CharType_HIRAGANA,
+            preedit_.text());
+        if (composingText.empty()) {
+            engine_->server().inputChar(" ");
+            ic_->commitString(engine_->server().getComposingText(
+                hazkey::commands::GetComposingString_CharType_HIRAGANA, ""));
+            reset();
+        } else {
+            showNonPredictCandidateList();
+        }
+    }
+}
+
+void HazkeyState::resetThumbShift() {
+    thumbShift_.leftDown = false;
+    thumbShift_.rightDown = false;
+    thumbShift_.used = false;
+    thumbShift_.timedOut = false;
+    thumbShift_.lastPressTime = std::nullopt;
 }
 
 void HazkeyState::candidateKeyEvent(
@@ -560,6 +718,7 @@ void HazkeyState::reset() {
     isDirectConversionMode_ = false;
     livePreeditIndex_ = -1;
     isCursorMoving_ = false;
+    resetThumbShift();
     engine_->server().newComposingText();
     ic_->inputPanel().reset();
 }

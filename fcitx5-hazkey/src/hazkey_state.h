@@ -1,12 +1,16 @@
 #ifndef _FCITX5_HAZKEY_HAZKEY_STATE_H_
 #define _FCITX5_HAZKEY_HAZKEY_STATE_H_
 
+#include <chrono>
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/surroundingtext.h>
+#include <fcitx-utils/keysym.h>
+#include <optional>
 
 #include "hazkey_candidate.h"
 #include "hazkey_preedit.h"
+#include "thumb_shift.h"
 
 namespace fcitx {
 
@@ -105,10 +109,32 @@ class HazkeyState : public InputContextProperty {
 
     bool isAltDigitKeyEvent(const KeyEvent& keyEvent);
 
+    enum class ThumbTapAction {
+        None = 0,
+        Space = 1,
+        PassThrough = 2,
+    };
+
+    struct ThumbShiftContext {
+        bool leftDown = false;
+        bool rightDown = false;
+        bool used = false;
+        bool timedOut = false;
+        std::optional<std::chrono::steady_clock::time_point> lastPressTime;
+    };
+
+    bool handleThumbShiftEvent(KeyEvent& keyEvent);
+    ThumbShiftState currentThumbShiftState() const;
+    bool isThumbShiftKey(KeySym sym) const;
+    bool canHandleThumbShiftKeyEvent(const KeyEvent& keyEvent) const;
+    void handleThumbShiftTapAction(KeySym sym);
+    void resetThumbShift();
+
     bool isCursorMoving_ = false;
 
     bool isDirectConversionMode_ = false;
     int livePreeditIndex_ = -1;
+    ThumbShiftContext thumbShift_;
     // engine
     HazkeyEngine* engine_;
     // fcitx input context
